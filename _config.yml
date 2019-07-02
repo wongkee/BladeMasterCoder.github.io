@@ -27,7 +27,7 @@ rss_url: /feed.xml
 
 # gavatar头像及Favicon
 gavatar : /assets/img/gavatar.png
-favicon : /assets/img/favicon.png
+favicon : /assets/img/gavatar.png
 
 # disqus 设置
 #disqus:
@@ -35,7 +35,7 @@ favicon : /assets/img/favicon.png
 
 #profile 个人信息
 
-profile_desc : DarLie<br>Java Developer<br>
+profile_desc : Rudolf<br>Java Developer<br>
 
 # 首页除了最新文章外显示分类
 cates: 
