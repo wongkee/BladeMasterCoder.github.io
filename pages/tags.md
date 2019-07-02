@@ -12,7 +12,7 @@ permalink: /pages/tags.html
 	</div>
 
 	<div class="clear"></div>
-
+	
 	<div>
 		{% for tag in site.tags %}
 		<div class="target-fix" id = "{{tag[0]}}" name="{{tag[0]}}">
@@ -28,3 +28,4 @@ permalink: /pages/tags.html
 		{% endfor %}
 	</div>	
 </div>	
+
