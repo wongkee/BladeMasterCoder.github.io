@@ -31,7 +31,11 @@ description:
 #### 静态代理  
 以一个例子解释静态代理的原理  
 电影院播放电影，那么我们就可以将电影院理解为电影的代理，那么它是怎么实现的呢？
+
+![](F:\wangqi\image\staticProxy.jpg)
+
 1、首先实现一个 Movie接口,定义一个play（）方法用于放映电影 
+
 ```java
 public interface Movie {
     void play();
@@ -47,6 +51,7 @@ public class RealMovie implements Movie {
 }
 ```
 3、创建 Cinema 类实现Movie接口，用于播放电影和插播广告
+
 ```java
 public class Cinema implements  Movie {
    RealMovie movie;
@@ -70,6 +75,7 @@ public class Cinema implements  Movie {
 }
 ```
 5、测试静态代理
+
 ```java
 public class StaticProxyTest {
     public static  void main(String args[]){
