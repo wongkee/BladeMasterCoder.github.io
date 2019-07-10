@@ -183,54 +183,134 @@ public class Test {
 
 
 
-远程代理（headfirst设计模式）  
-需求提出：对糖果机有很好的监控，找一种方法给CEO一份库存和机器状态报告。  
-解决方法：
-创建一个GumballMonitor 对糖果机进行监控，并将报告打印出来      
-创建一个糖果机类 GumballMachine,它记录自己的位置和自己的生产状态  
-将被监控的机器实例传递给 GumballMonitor,将其信息打印出来  
+###  远程代理（headfirst设计模式）  
+
+远程代理，类比于本地代理，就是服务器端有一个代理负责与客户端进行交互。如下图所示  
+
+![rmi](https://github.com/wongkee/images/blob/master/spring_note/headfirst/rmi-2.gif)
+
+ 实现步骤：  
+ 1、制作远程接口；定义出可以让客户远程调用的方法。  
+
+```java
+public interface MyRemote extends Remote {
+    //an interface that extends <code>java.rmi.Remote</code> are available remotely.  扩展该Remote表明该接口可被远程访问
+    public String sayHello() throws RemoteException;//远程调用可能会因为网络不通畅导致一些问题，因此需要抛出异常
+}
+```
 
 
-需求变更：  
-需要的是远程监控糖果机，上面的实现都是在同一个JVM虚拟机中...  
-解决方法
-不变化GumballMonitor,不将糖果机交给GumballMonitor,而是将一个远程对象的代理交给它。  
-原理如图：
- ![](remoteproxy)
- java内置的远程调用功能，RMI  
- 原理：  
- rmi.jpg  
 
- 实现步骤：
- 1、制作远程接口；定义出可以让客户远程调用的方法。Stub和实际的服务都实现此接口
- 2、制作远程实现： 实际工作的类，为远程接口中定义的远程方法提供真正的实现。这就是客户真正想要调用方法的对象
- 3、利用rmic产生的stub和skeleton；  客户和服务的辅助类。工具自动生成（注此步骤在jdk8中已经被抛弃，不再使用rmic静态生成）
- 4、启动RMI registry： 就像电话博，客户可以从中查到代理的位置
- 5、开启远程服务； 服务类实例化一个服务对象，并将这个服务注册到RMI registry。之后服务就可以供客户调用了
+ 2、制作远程实现： 实际工作的类，为远程接口中定义的远程方法提供真正的实现。这就是客户真正想要调用方法的对象  
 
-实现原理
-rmi-2.gif
+```java
+public class MyRemoteImpl extends UnicastRemoteObject implements MyRemote {
+    /*
+    * Used for exporting a remote object with JRMP and obtaining a stub
+     * that communicates to the remote object. Stubs are either generated
+     * at runtime using dynamic proxy objects, or they are generated statically
+     * at build time, typically using the {@code rmic} tool.
+     * 译:
+     * UnicastRemoteObject作用
+     * 1. 导出一个使用JRMP可访问的远程对象
+     * 2. 获得与远程对象交流的存根，产生存根的方法有两种
+     *      （1）运行时使用动态代理对象
+     *      （2）构建时静态生成（使用 rmic工具，已被抛弃，不建议使用）
+     *
+     * 生成远程对象的方法
+     * 1、使用无参构造方法 UnicastRemoteObject()
+     * 2、使用 UnicastRemoteObject(int port)
+     * 3、    protected UnicastRemoteObject(int port,
+                                  RMIClientSocketFactory csf,
+                                  RMIServerSocketFactory ssf)
+     *
+     * 4、  public static RemoteStub exportObject(Remote obj)  用于静态的生成存根而且已经被弃用
+     * 5、public static Remote exportObject(Remote obj, int port)
+     * 6、  public static Remote exportObject(Remote obj, int port,
+                                      RMIClientSocketFactory csf,
+                                      RMIServerSocketFactory ssf)
 
+                静态存根存在则使用  否则会使用java.lang.reflect.Proxy Proxy 动态生成一个
+            * */
+    @Override
+    public String sayHello() throws RemoteException {
+        return "Server says,'Hey'";
+    }
+    public MyRemoteImpl() throws RemoteException{
+        super();
+    }
+
+}
+```
+
+
+
+ 3、获取远程对象并在RMI registry进行注册
+
+```java
+public class Service {
+    public  static void main(String args[]){
+        try {
+
+
+            //获得远程对象
+            MyRemote service=new MyRemoteImpl();
+            String name="gupao.design.proxy.headfirst.rmi";
+            Registry registry1 = LocateRegistry.createRegistry(1089);
+            registry1.bind(name,service);
+            System.out.println("Server Start");
+            //  Naming.rebind("RemoteHello",service);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+ 4、开启远程服务； 服务类实例化一个服务对象，并将这个服务注册到RMI registry。之后服务就可以供客户调用了
+
+```java
+public class MyRemoteClient {
+    public static void main(String args[]){
+        new MyRemoteClient().go();
+    }
+    public void go(){
+
+        try {
+            String name="gupao.design.proxy.headfirst.rmi";
+            Registry registry= LocateRegistry.getRegistry("localhost",1089);
+            MyRemote service=(MyRemote)registry.lookup(name);
+            String s=service.sayHello();
+            System.out.println(s);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+
+
+  问题解决：
 
 java.security.AccessControlException: access denied.... 权限问题的错误  
-解决方案  jdk\jre\lib\security\java.policy  
+解决方案  ：  
+
+打开jdk\jre\lib\security\java.policy  
 grant{} 最后一行添加  
 permission java.security.AllPermission;  
 参考博客：https://blog.csdn.net/qq_14994863/article/details/80769487  
 继而报错：
 java.rmi.ServerException: RemoteException occurred in server thread; nested exception is: 
 	java.rmi.UnmarshalException: error unmarshalling arguments; nested exception is: 
-解决方法 在class文件、bin目录下、当前类所在文件夹某一个下（这个真的是不确定，我是在classes文件夹）下执行rmiregistry  
-然后再打开服务端  
-开启客户端进行测试  
-代码地址 spring_note\src\main\java\gupao\design\proxy\headfirst\rmitutor
+解决方法 ：  
 
-//获取字节码文件
-ProxyGenerator.generateProxy("$Proxy0",new Class[]{obj.getClass()});
-FileOutputStream os=new FileOutputStream("$Proxy0.class");
-os.write(data)
-os.close()
+在class文件、bin目录下、当前类所在文件夹某一个下（这个真的是不确定，我是在classes文件夹）下执行rmiregistry ，然后再打开服务端 ，开启客户端进行测试  
+[代码地址](https://github.com/wongkee/spring_note/tree/master/src/main/java/gupao/design/proxy/headfirst)
 
-如果报错的话引入 jdk/jre下面的rt.jar
-使用反编译工具查看生成的动态代理类的源码（直接将 class文件拖入IDEA可以直接查看源码--IDEA自动帮忙完成反编译工具）
-method,invoke(this.tartget,args);
+### 参考链接
+
+[启动tomcat报错：java.security.AccessControlException: access denied....](https://blog.csdn.net/qq_14994863/article/details/80769487)
+
+[我的 RMI 学习笔记（1）](https://segmentfault.com/a/1190000004494341)
+
